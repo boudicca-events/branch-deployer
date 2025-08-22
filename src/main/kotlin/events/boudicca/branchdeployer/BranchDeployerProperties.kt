@@ -8,6 +8,7 @@ data class BranchDeployerProperties(
     val gitRepository: String,
     val dockerImageName: String,
     val baseUrl: String,
+    val dockerNetwork: String?,
     val filesToCopy: List<FileCopy>,
     val labelsToAdd: List<Label>,
 )

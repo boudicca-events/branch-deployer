@@ -2,6 +2,7 @@ package events.boudicca.branchdeployer.docker
 
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.exception.DockerException
+import com.github.dockerjava.api.model.HostConfig
 import com.github.dockerjava.core.DefaultDockerClientConfig
 import com.github.dockerjava.core.DockerClientConfig
 import com.github.dockerjava.core.DockerClientImpl
@@ -65,9 +66,17 @@ class RealDockerService : DockerService {
         }
 
         val containerId = try {
-            dockerClient.createContainerCmd(newImageId)
+            var createContainerCmd = dockerClient.createContainerCmd(newImageId)
                 .withName(create.name)
                 .withLabels(create.labels)
+            if (create.dockerNetwork != null) {
+                createContainerCmd = createContainerCmd
+                    .withHostConfig(
+                        HostConfig.newHostConfig()
+                            .withNetworkMode(create.dockerNetwork)
+                    )
+            }
+            createContainerCmd
                 .exec()
                 .id
         } catch (e: DockerException) {

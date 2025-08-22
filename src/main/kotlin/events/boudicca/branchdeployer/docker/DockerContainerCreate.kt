@@ -5,4 +5,5 @@ data class DockerContainerCreate(
     val image: String,
     val labels: Map<String, String>,
     val tar: ByteArray,
+    val dockerNetwork: String?,
 )

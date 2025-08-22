@@ -7,6 +7,7 @@ deploy:
   dockerImageName: ghcr.io/boudicca-events/publisher-event-html
   useRealDocker: true
   baseUrl: test.localhost
+  dockerNetwork:
   filesToCopy:
     - from: ./application.properties.template
       to: /opt/boudicca-html/application.properties

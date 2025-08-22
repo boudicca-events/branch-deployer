@@ -72,7 +72,8 @@ class DeploymentService(
                     BRANCH_LABEL to request.branchName,
                     URL_LABEL to url,
                 ) + collectAdditionalLabels(props),
-                generateBuildTarFile(props)
+                generateBuildTarFile(props),
+                if (branchDeployerProperties.dockerNetwork.isNullOrBlank()) null else branchDeployerProperties.dockerNetwork
             )
         )
 
