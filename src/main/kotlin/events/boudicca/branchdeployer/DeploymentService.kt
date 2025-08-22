@@ -46,8 +46,10 @@ class DeploymentService(
     fun deploy(request: DeploymentRequest): DeploymentResult {
         val cleanedBranchName = cleanBranchName(request.branchName)
         val imageName = branchDeployerProperties.dockerImageName + ":branchdeployer-" + cleanedBranchName
-        val url = "https://" + cleanedBranchName + "." + branchDeployerProperties.baseUrl
+        val domain = cleanedBranchName + "." + branchDeployerProperties.baseUrl
+        val url = "https://" + domain
         val props = ReplacementProperties(
+            domain,
             url,
             request.branchName,
             cleanedBranchName,
@@ -162,13 +164,15 @@ class DeploymentService(
     }
 
     private data class ReplacementProperties(
+        val domain: String,
         val url: String,
         val branch: String,
         val cleanedBranch: String,
         val imageName: String,
     ) {
         fun replaceAll(string: String): String {
-            return string.replace("%URL%", url)
+            return string.replace("%DOMAIN%", domain)
+                .replace("%URL%", url)
                 .replace("%BRANCH%", branch)
                 .replace("%CLEAN_BRANCH%", cleanedBranch)
                 .replace("%IMAGE%", imageName)

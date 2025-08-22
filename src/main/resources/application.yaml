@@ -14,7 +14,7 @@ deploy:
     - key: "traefik.enable"
       value: "true"
     - key: "traefik.http.routers.branchdeployer-%CLEAN_BRANCH%.rule"
-      value: "Host(`%URL%`)"
+      value: "Host(`%DOMAIN%`)"
     - key: "traefik.http.routers.branchdeployer-%CLEAN_BRANCH%.entrypoints=websecure"
       value: "websecure"
     - key: "traefik.http.routers.branchdeployer-%CLEAN_BRANCH%.tls.certresolver="
