@@ -6,6 +6,7 @@ import com.github.dockerjava.core.DefaultDockerClientConfig
 import com.github.dockerjava.core.DockerClientConfig
 import com.github.dockerjava.core.DockerClientImpl
 import com.github.dockerjava.zerodep.ZerodepDockerHttpClient
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty
 import org.springframework.stereotype.Service
 import java.io.ByteArrayInputStream
@@ -14,6 +15,8 @@ import java.io.ByteArrayInputStream
 @Service
 @ConditionalOnBooleanProperty("deploy.useRealDocker", havingValue = true)
 class RealDockerService : DockerService {
+
+    private val logger = KotlinLogging.logger {}
 
     val dockerConfig: DockerClientConfig = DefaultDockerClientConfig
         .createDefaultConfigBuilder()
@@ -43,6 +46,7 @@ class RealDockerService : DockerService {
     }
 
     override fun deploy(create: DockerContainerCreate) {
+        logger.info { "pulling image ${create.image}" }
         try {
             dockerClient.pullImageCmd(create.image)
                 .start()
