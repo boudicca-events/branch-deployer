@@ -46,3 +46,10 @@ kotlin {
 tasks.withType<Test> {
 	useJUnitPlatform()
 }
+
+tasks.register<Exec>("imageBuild") {
+	inputs.file("src/main/docker/Dockerfile")
+	inputs.files(tasks.named("bootJar"))
+	dependsOn(tasks.named("assemble"))
+	commandLine("docker", "build", "-t", "localhost/boudicca-branchdeployer", "-f", "src/main/docker/Dockerfile", ".")
+}
