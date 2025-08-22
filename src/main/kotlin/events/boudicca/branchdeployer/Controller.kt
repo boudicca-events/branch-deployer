@@ -17,7 +17,14 @@ class Controller(private val deploymentService: DeploymentService) {
         produces = [MediaType.APPLICATION_JSON_VALUE],
         consumes = [MediaType.APPLICATION_JSON_VALUE]
     )
-    fun deploy(@RequestBody deploymentRequest: DeploymentRequest) {
-        deploymentService.deploy(deploymentRequest)
+    fun deploy(@RequestBody deploymentRequest: DeploymentRequest): DeploymentResult {
+        return deploymentService.deploy(deploymentRequest)
+    }
+
+    @PostMapping(
+        "/deploy/cleanup",
+    )
+    fun cleanup() {
+        deploymentService.cleanup()
     }
 }

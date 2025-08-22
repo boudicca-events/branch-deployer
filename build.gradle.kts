@@ -30,6 +30,7 @@ dependencies {
 	implementation("com.github.docker-java:docker-java-transport-zerodep:3.6.0")
 	implementation("io.github.oshai:kotlin-logging-jvm:7.0.13")
 	implementation("org.apache.commons:commons-compress:1.28.0")
+	implementation("org.eclipse.jgit:org.eclipse.jgit:7.3.0.202506031305-r")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testImplementation("org.springframework.security:spring-security-test")

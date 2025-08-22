@@ -3,13 +3,16 @@ package events.boudicca.branchdeployer
 import events.boudicca.branchdeployer.docker.DockerContainer
 import events.boudicca.branchdeployer.docker.DockerContainerCreate
 import events.boudicca.branchdeployer.docker.DockerService
+import events.boudicca.branchdeployer.git.GitService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.apache.commons.compress.archivers.ArchiveStreamFactory
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.util.concurrent.TimeUnit
 
 
 private const val LABEL_PREFIX = "events.boudicca.branchdeployer"
@@ -21,6 +24,7 @@ const val CONTAINER_NAME_PREFIX = "branchdeployer_"
 @Service
 class DeploymentService(
     private val dockerService: DockerService,
+    private val gitService: GitService,
     private val branchDeployerProperties: BranchDeployerProperties
 ) {
 
@@ -32,14 +36,14 @@ class DeploymentService(
         return DeploymentState(
             relevantContainers.map {
                 DeployedBranch(
-                    it.labels.entries.single { it.key == BRANCH_LABEL }.value,
-                    it.labels.entries.single { it.key == URL_LABEL }.value,
+                    it.getBranch(),
+                    it.getUrl(),
                 )
             }.sortedBy { it.branch }
         )
     }
 
-    fun deploy(request: DeploymentRequest) {
+    fun deploy(request: DeploymentRequest): DeploymentResult {
         val cleanedBranchName = cleanBranchName(request.branchName)
         val imageName = branchDeployerProperties.dockerImageName + ":" + cleanedBranchName
         val url = "https://" + cleanedBranchName + "." + branchDeployerProperties.baseUrl
@@ -69,6 +73,24 @@ class DeploymentService(
                 generateBuildTarFile(props)
             )
         )
+
+        return DeploymentResult(url)
+    }
+
+    @Scheduled(fixedRate = 1, timeUnit = TimeUnit.DAYS)
+    fun cleanup() {
+        logger.info { "starting cleanup" }
+        val containers = findAllManagedContainers()
+        logger.debug { "active containers: $containers" }
+        val activeBranches = gitService.getAllRemoteBranches().toSet()
+        logger.debug { "active branches: $activeBranches" }
+
+        for (container in containers) {
+            if (!activeBranches.contains(container.getBranch())) {
+                logger.info { "cleaning up branch ${container.getBranch()}" }
+                dockerService.delete(container.id)
+            }
+        }
     }
 
     private fun generateBuildTarFile(props: ReplacementProperties): ByteArray {
@@ -123,7 +145,7 @@ class DeploymentService(
 
     private fun findContainerIdForBranchName(branchName: String): String? {
         return findAllManagedContainers()
-            .firstOrNull { it.labels[BRANCH_LABEL] == branchName }
+            .firstOrNull { it.getBranch() == branchName }
             ?.id
     }
 

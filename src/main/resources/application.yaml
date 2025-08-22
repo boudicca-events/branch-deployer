@@ -3,10 +3,9 @@ spring:
     name: branch-deployer
 deploy:
   password: deploy
-  gitRepository: git@github.com:boudicca-events/boudicca.events.git
+  gitRepository: https://github.com/boudicca-events/branch-deployer.git
   dockerImageName: ghcr.io/boudicca-events/publisher-event-html
   useRealDocker: true
-  gitRepositoryCacheFolder: ./cache #TODO
   baseUrl: test.localhost
   filesToCopy:
     - from: ./application.properties.template
