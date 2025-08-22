@@ -20,7 +20,8 @@ class BranchDeployerApplication : WebMvcConfigurer {
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
         http.authorizeHttpRequests {
-            it.requestMatchers("/deploy/**").hasRole("deploy")
+            it.requestMatchers("/deploy").hasRole("DEPLOY")
+            it.requestMatchers("/deploy/**").hasRole("DEPLOY")
             it.requestMatchers("/**").permitAll()
         }
         http.httpBasic(withDefaults())
@@ -32,12 +33,11 @@ class BranchDeployerApplication : WebMvcConfigurer {
         registry.addMapping("/**")
     }
 
-    //TODO this really should be done better....
     @Bean
     fun users(branchDeployerProperties: BranchDeployerProperties): UserDetailsService {
         val ingestUser = User.builder()
             .username("deploy")
-            .password("{noop}" + branchDeployerProperties.tmp)
+            .password("{noop}" + branchDeployerProperties.password)
             .roles("DEPLOY")
             .build()
         return InMemoryUserDetailsManager(ingestUser)
