@@ -7,6 +7,7 @@ import com.github.dockerjava.core.DockerClientImpl
 import com.github.dockerjava.zerodep.ZerodepDockerHttpClient
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty
 import org.springframework.stereotype.Service
+import java.io.ByteArrayInputStream
 
 
 @Service
@@ -41,7 +42,12 @@ class RealDockerService : DockerService {
             .start()
             .awaitCompletion()
 
-        val containerId = dockerClient.createContainerCmd(create.image)
+        val newImageId = dockerClient.buildImageCmd()
+            .withTarInputStream(ByteArrayInputStream(create.tar))
+            .start()
+            .awaitImageId()
+
+        val containerId = dockerClient.createContainerCmd(newImageId)
             .withName(create.name)
             .withLabels(create.labels)
             .exec()

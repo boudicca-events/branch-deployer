@@ -1,0 +1,2 @@
+spring.application.name=branch-deployer-%CLEAN_BRANCH%
+boudicca.search.url=https://search.boudicca.events
