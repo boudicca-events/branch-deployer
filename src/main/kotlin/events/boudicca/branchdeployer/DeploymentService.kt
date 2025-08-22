@@ -1,7 +1,9 @@
 package events.boudicca.branchdeployer
 
+import events.boudicca.branchdeployer.docker.DockerContainer
 import events.boudicca.branchdeployer.docker.DockerContainerCreate
 import events.boudicca.branchdeployer.docker.DockerService
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 
 private const val LABEL_PREFIX = "events.boudicca.branchdeployer"
@@ -15,12 +17,10 @@ class DeploymentService(
     private val branchDeployerProperties: BranchDeployerProperties
 ) {
 
-    fun getCurrentState(): DeploymentState {
-        val allContainers = dockerService.getAllContainers()
+    private val logger = KotlinLogging.logger {}
 
-        val relevantContainers = allContainers.filter {
-            it.labels.any { it.key == MANAGED_LABEL && it.value == "true" }
-        }
+    fun getCurrentState(): DeploymentState {
+        val relevantContainers = findAllManagedContainers()
 
         return DeploymentState(
             relevantContainers.map {
@@ -32,6 +32,13 @@ class DeploymentService(
     fun deploy(request: DeploymentRequest) {
         val cleanedBranchName = cleanBranchName(request.branchName)
 
+        val containerId = findContainerIdForBranchName(request.branchName)
+        if (containerId != null) {
+            logger.info { "container for branch already exists, deleting old container" }
+            dockerService.delete(containerId)
+        }
+
+        logger.info { "deploying new branch: $request" }
         dockerService.deploy(
             DockerContainerCreate(
                 CONTAINER_NAME_PREFIX + cleanedBranchName,
@@ -44,7 +51,21 @@ class DeploymentService(
         )
     }
 
+    private fun findContainerIdForBranchName(branchName: String): String? {
+        return findAllManagedContainers()
+            .firstOrNull { it.labels[BRANCH_LABEL] == branchName }
+            ?.id
+    }
+
     private fun cleanBranchName(string: String): String {
         return string.filter { it.isLetter() }.lowercase()
+    }
+
+    private fun findAllManagedContainers(): List<DockerContainer> {
+        val allContainers = dockerService.getAllContainers()
+        val relevantContainers = allContainers.filter {
+            it.labels.any { it.key == MANAGED_LABEL && it.value == "true" }
+        }
+        return relevantContainers
     }
 }

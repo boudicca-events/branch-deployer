@@ -29,6 +29,7 @@ class RealDockerService : DockerService {
 
         return containers.map {
             DockerContainer(
+                it.id,
                 it.names[0],
                 it.labels
             )
@@ -47,6 +48,13 @@ class RealDockerService : DockerService {
             .id
 
         dockerClient.startContainerCmd(containerId)
+            .exec()
+    }
+
+    override fun delete(containerId: String) {
+        dockerClient.stopContainerCmd(containerId)
+            .exec()
+        dockerClient.removeContainerCmd(containerId)
             .exec()
     }
 }

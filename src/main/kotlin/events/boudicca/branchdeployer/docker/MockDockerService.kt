@@ -1,40 +1,31 @@
 package events.boudicca.branchdeployer.docker
 
-import events.boudicca.branchdeployer.BRANCH_LABEL
-import events.boudicca.branchdeployer.MANAGED_LABEL
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty
 import org.springframework.stereotype.Service
+import kotlin.random.Random
 
 
 @Service
 @ConditionalOnBooleanProperty("deploy.useRealDocker", havingValue = false)
 class MockDockerService : DockerService {
+
+    val containers = mutableListOf<DockerContainer>()
+
     override fun getAllContainers(): List<DockerContainer> {
-        return listOf(
-            DockerContainer(
-                "someRandomOtherContainer",
-                mapOf(
-                    "label" to "labelvalue",
-                )
-            ),
-            DockerContainer(
-                "branch1",
-                mapOf(
-                    MANAGED_LABEL to "true",
-                    BRANCH_LABEL to "branch1",
-                )
-            ),
-            DockerContainer(
-                "branch2",
-                mapOf(
-                    MANAGED_LABEL to "true",
-                    BRANCH_LABEL to "branch2",
-                )
-            ),
-        )
+        return containers
     }
 
     override fun deploy(create: DockerContainerCreate) {
-        println("request to deploy container $create")
+        containers.add(
+            DockerContainer(
+                Random.nextInt().toString(10),
+                create.name,
+                create.labels
+            )
+        )
+    }
+
+    override fun delete(containerId: String) {
+        containers.removeAll { it.id == containerId }
     }
 }
