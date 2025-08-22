@@ -1,6 +1,7 @@
 package events.boudicca.branchdeployer.docker
 
 import com.github.dockerjava.api.DockerClient
+import com.github.dockerjava.api.exception.DockerException
 import com.github.dockerjava.core.DefaultDockerClientConfig
 import com.github.dockerjava.core.DockerClientConfig
 import com.github.dockerjava.core.DockerClientImpl
@@ -26,7 +27,11 @@ class RealDockerService : DockerService {
     var dockerClient: DockerClient = DockerClientImpl.getInstance(dockerConfig, dockerHttpClient)
 
     override fun getAllContainers(): List<DockerContainer> {
-        val containers = dockerClient.listContainersCmd().exec()
+        val containers = try {
+            dockerClient.listContainersCmd().exec()
+        } catch (e: DockerException) {
+            throw RuntimeException("error listing containers", e)
+        }
 
         return containers.map {
             DockerContainer(
@@ -38,29 +43,53 @@ class RealDockerService : DockerService {
     }
 
     override fun deploy(create: DockerContainerCreate) {
-        dockerClient.pullImageCmd(create.image)
-            .start()
-            .awaitCompletion()
+        try {
+            dockerClient.pullImageCmd(create.image)
+                .start()
+                .awaitCompletion()
+        } catch (e: DockerException) {
+            throw RuntimeException("error pulling image", e)
+        }
 
-        val newImageId = dockerClient.buildImageCmd()
-            .withTarInputStream(ByteArrayInputStream(create.tar))
-            .start()
-            .awaitImageId()
+        val newImageId = try {
+            dockerClient.buildImageCmd()
+                .withTarInputStream(ByteArrayInputStream(create.tar))
+                .start()
+                .awaitImageId()
+        } catch (e: DockerException) {
+            throw RuntimeException("error building image", e)
+        }
 
-        val containerId = dockerClient.createContainerCmd(newImageId)
-            .withName(create.name)
-            .withLabels(create.labels)
-            .exec()
-            .id
+        val containerId = try {
+            dockerClient.createContainerCmd(newImageId)
+                .withName(create.name)
+                .withLabels(create.labels)
+                .exec()
+                .id
+        } catch (e: DockerException) {
+            throw RuntimeException("error creating container", e)
+        }
 
-        dockerClient.startContainerCmd(containerId)
-            .exec()
+        try {
+            dockerClient.startContainerCmd(containerId)
+                .exec()
+        } catch (e: DockerException) {
+            throw RuntimeException("error starting container", e)
+        }
     }
 
     override fun delete(containerId: String) {
-        dockerClient.stopContainerCmd(containerId)
-            .exec()
-        dockerClient.removeContainerCmd(containerId)
-            .exec()
+        try {
+            dockerClient.stopContainerCmd(containerId)
+                .exec()
+        } catch (e: DockerException) {
+            throw RuntimeException("error stopping container", e)
+        }
+        try {
+            dockerClient.removeContainerCmd(containerId)
+                .exec()
+        } catch (e: DockerException) {
+            throw RuntimeException("error removing container", e)
+        }
     }
 }
