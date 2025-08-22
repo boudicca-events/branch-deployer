@@ -45,7 +45,7 @@ class DeploymentService(
 
     fun deploy(request: DeploymentRequest): DeploymentResult {
         val cleanedBranchName = cleanBranchName(request.branchName)
-        val imageName = branchDeployerProperties.dockerImageName + ":" + cleanedBranchName
+        val imageName = branchDeployerProperties.dockerImageName + ":branchdeployer-" + cleanedBranchName
         val url = "https://" + cleanedBranchName + "." + branchDeployerProperties.baseUrl
         val props = ReplacementProperties(
             url,
