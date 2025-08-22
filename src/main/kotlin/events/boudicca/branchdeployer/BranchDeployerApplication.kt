@@ -1,5 +1,9 @@
 package events.boudicca.branchdeployer
 
+import io.swagger.v3.oas.annotations.OpenAPIDefinition
+import io.swagger.v3.oas.annotations.info.Info
+import io.swagger.v3.oas.annotations.info.License
+import io.swagger.v3.oas.annotations.servers.Server
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.runApplication
@@ -14,6 +18,11 @@ import org.springframework.security.web.SecurityFilterChain
 import org.springframework.web.servlet.config.annotation.CorsRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
+@OpenAPIDefinition(
+    servers = [
+        Server(url = "/", description = "Default Server URL")
+    ]
+)
 @SpringBootApplication
 @EnableScheduling
 @EnableConfigurationProperties(BranchDeployerProperties::class)
