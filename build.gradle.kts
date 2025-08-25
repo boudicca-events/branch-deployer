@@ -23,7 +23,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.boot:spring-boot-starter-web")
-	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.10")
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.11")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("com.github.docker-java:docker-java-core:3.6.0")
