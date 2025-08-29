@@ -19,6 +19,7 @@ class MockDockerService : DockerService {
         containers.add(
             DockerContainer(
                 Random.nextInt().toString(10),
+                create.image,
                 create.name,
                 create.labels
             )

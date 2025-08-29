@@ -19,6 +19,8 @@ private const val LABEL_PREFIX = "events.boudicca.branchdeployer"
 const val MANAGED_LABEL = "$LABEL_PREFIX.managed"
 const val BRANCH_LABEL = "$LABEL_PREFIX.branch"
 const val URL_LABEL = "$LABEL_PREFIX.url"
+const val DEPLOYMENTTYPE_LABEL = "$LABEL_PREFIX.deploymentType"
+const val GITREPOSITORY_LABEL = "$LABEL_PREFIX.gitRepository"
 const val CONTAINER_NAME_PREFIX = "branchdeployer_"
 
 @Service
@@ -37,21 +39,26 @@ class DeploymentService(
             relevantContainers.map {
                 DeployedBranch(
                     it.getBranch(),
+                    it.getGitRepository(),
                     it.getUrl(),
+                    it.image,
+                    it.getDeploymentType(),
                 )
             }.sortedBy { it.branch }
         )
     }
 
     fun deploy(request: DeploymentRequest): DeploymentResult {
+        val deployment = findDeploymentType(request.deploymentName)
         val cleanedBranchName = cleanBranchName(request.branchName)
-        val imageName = branchDeployerProperties.dockerImageName + ":branchdeployer-" + cleanedBranchName
-        val domain = cleanedBranchName + "." + branchDeployerProperties.baseUrl
-        val url = "https://" + domain
+        val imageName = request.dockerImageName
+        val domain = request.deploymentName + "." + cleanedBranchName + "." + branchDeployerProperties.baseUrl
+        val url = "https://$domain"
         val props = ReplacementProperties(
             domain,
             url,
             request.branchName,
+            request.gitRepository,
             cleanedBranchName,
             imageName
         )
@@ -65,14 +72,16 @@ class DeploymentService(
         logger.info { "deploying new branch: $request" }
         dockerService.deploy(
             DockerContainerCreate(
-                CONTAINER_NAME_PREFIX + cleanedBranchName,
+                CONTAINER_NAME_PREFIX + cleanedBranchName + "_" + request.deploymentName,
                 imageName,
                 mapOf(
                     MANAGED_LABEL to "true",
                     BRANCH_LABEL to request.branchName,
                     URL_LABEL to url,
-                ) + collectAdditionalLabels(props),
-                generateBuildTarFile(props),
+                    DEPLOYMENTTYPE_LABEL to request.deploymentName,
+                    GITREPOSITORY_LABEL to request.gitRepository,
+                ) + collectAdditionalLabels(deployment, props),
+                generateBuildTarFile(deployment, props),
                 if (branchDeployerProperties.dockerNetwork.isNullOrBlank()) null else branchDeployerProperties.dockerNetwork
             )
         )
@@ -85,23 +94,27 @@ class DeploymentService(
         logger.info { "starting cleanup" }
         val containers = findAllManagedContainers()
         logger.debug { "active containers: $containers" }
-        val activeBranches = gitService.getAllRemoteBranches().toSet()
-        logger.debug { "active branches: $activeBranches" }
+        val containersByGitRepo = containers.groupBy { it.getGitRepository() }
 
-        for (container in containers) {
-            if (!activeBranches.contains(container.getBranch())) {
-                logger.info { "cleaning up branch ${container.getBranch()}" }
-                dockerService.delete(container.id)
+        containersByGitRepo.forEach {
+            val activeBranches = gitService.getAllRemoteBranchesForRemote(it.key).toSet()
+            logger.debug { "active branches for git repo ${it.key}: $activeBranches" }
+
+            for (container in it.value) {
+                if (!activeBranches.contains(container.getBranch())) {
+                    logger.info { "cleaning up branch ${container.getBranch()} for git repo ${it.key}" }
+                    dockerService.delete(container.id)
+                }
             }
         }
     }
 
-    private fun generateBuildTarFile(props: ReplacementProperties): ByteArray {
+    private fun generateBuildTarFile(deployment: Deployment, props: ReplacementProperties): ByteArray {
         val arrayOutputStream = ByteArrayOutputStream()
         ArchiveStreamFactory()
             .createArchiveOutputStream<TarArchiveOutputStream>(ArchiveStreamFactory.TAR, arrayOutputStream)
             .use { tarOutputStream ->
-                branchDeployerProperties.filesToCopy
+                deployment.filesToCopy
                     .forEach {
                         val file = File(it.from)
                         val fileContent = props
@@ -114,7 +127,7 @@ class DeploymentService(
                         tarOutputStream.closeArchiveEntry()
                     }
 
-                val dockerfileBytes = generateDockerFile(props)
+                val dockerfileBytes = generateDockerFile(deployment, props)
                 val entry = TarArchiveEntry("Dockerfile")
                 entry.size = dockerfileBytes.size.toLong()
                 tarOutputStream.putArchiveEntry(entry)
@@ -125,11 +138,11 @@ class DeploymentService(
         return arrayOutputStream.toByteArray()
     }
 
-    private fun generateDockerFile(props: ReplacementProperties): ByteArray {
+    private fun generateDockerFile(deployment: Deployment, props: ReplacementProperties): ByteArray {
         val sb = StringBuilder()
 
         sb.append("FROM ${props.imageName}").appendLine()
-        branchDeployerProperties.filesToCopy
+        deployment.filesToCopy
             .forEach {
                 sb.append("ADD ${it.from} ${it.to}").appendLine()
             }
@@ -137,10 +150,15 @@ class DeploymentService(
         return sb.toString().toByteArray()
     }
 
+    private fun findDeploymentType(deploymentType: String): Deployment {
+        return branchDeployerProperties.deployments.single { it.name == deploymentType }
+    }
+
     private fun collectAdditionalLabels(
+        deployment: Deployment,
         props: ReplacementProperties
     ): Map<String, String> {
-        return branchDeployerProperties.labelsToAdd
+        return deployment.labelsToAdd
             .associate {
                 props.replaceAll(it.key) to props.replaceAll(it.value)
             }
@@ -168,6 +186,7 @@ class DeploymentService(
         val domain: String,
         val url: String,
         val branch: String,
+        val gitRepository: String,
         val cleanedBranch: String,
         val imageName: String,
     ) {
@@ -177,6 +196,7 @@ class DeploymentService(
                 .replace("%BRANCH%", branch)
                 .replace("%CLEAN_BRANCH%", cleanedBranch)
                 .replace("%IMAGE%", imageName)
+                .replace("%GIT_REPOSITORY%", gitRepository)
         }
     }
 }

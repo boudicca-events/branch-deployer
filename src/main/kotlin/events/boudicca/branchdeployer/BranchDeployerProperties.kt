@@ -5,10 +5,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 @ConfigurationProperties(prefix = "deploy")
 data class BranchDeployerProperties(
     val password: String,
-    val gitRepository: String,
-    val dockerImageName: String,
     val baseUrl: String,
     val dockerNetwork: String?,
+    val deployments: List<Deployment>,
+)
+
+data class Deployment(
+    val name: String,
     val filesToCopy: List<FileCopy>,
     val labelsToAdd: List<Label>,
 )

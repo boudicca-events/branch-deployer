@@ -3,20 +3,20 @@ spring:
     name: branch-deployer
 deploy:
   password: deploy
-  gitRepository: https://github.com/boudicca-events/branch-deployer.git
-  dockerImageName: ghcr.io/boudicca-events/publisher-event-html
   useRealDocker: true
   baseUrl: test.localhost
   dockerNetwork:
-  filesToCopy:
-    - from: ./application.properties.template
-      to: /opt/boudicca-html/application.properties
-  labelsToAdd:
-    - key: "traefik.enable"
-      value: "true"
-    - key: "traefik.http.routers.branchdeployer-%CLEAN_BRANCH%.rule"
-      value: "Host(`%DOMAIN%`)"
-    - key: "traefik.http.routers.branchdeployer-%CLEAN_BRANCH%.entrypoints=websecure"
-      value: "websecure"
-    - key: "traefik.http.routers.branchdeployer-%CLEAN_BRANCH%.tls.certresolver="
-      value: "myresolver"
+  deployments:
+    - name: publisher-html
+      filesToCopy:
+        - from: ./application.properties.template
+          to: /opt/boudicca-html/application.properties
+      labelsToAdd:
+        - key: "traefik.enable"
+          value: "true"
+        - key: "traefik.http.routers.branchdeployer-%CLEAN_BRANCH%.rule"
+          value: "Host(`%DOMAIN%`)"
+        - key: "traefik.http.routers.branchdeployer-%CLEAN_BRANCH%.entrypoints=websecure"
+          value: "websecure"
+        - key: "traefik.http.routers.branchdeployer-%CLEAN_BRANCH%.tls.certresolver="
+          value: "myresolver"

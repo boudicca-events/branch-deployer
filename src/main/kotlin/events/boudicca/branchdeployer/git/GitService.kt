@@ -1,17 +1,14 @@
 package events.boudicca.branchdeployer.git
 
-import events.boudicca.branchdeployer.BranchDeployerProperties
 import org.eclipse.jgit.api.Git
 import org.springframework.stereotype.Service
 
 @Service
-class GitService(
-    private val branchDeployerProperties: BranchDeployerProperties
-) {
+class GitService {
 
-    fun getAllRemoteBranches(): List<String> {
+    fun getAllRemoteBranchesForRemote(remote: String): List<String> {
         return Git.lsRemoteRepository()
-            .setRemote(branchDeployerProperties.gitRepository)
+            .setRemote(remote)
             .setHeads(true)
             .call()
             .map {

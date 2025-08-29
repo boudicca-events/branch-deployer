@@ -41,6 +41,7 @@ class RealDockerService : DockerService {
             DockerContainer(
                 it.id,
                 it.names[0],
+                it.image,
                 it.labels
             )
         }
