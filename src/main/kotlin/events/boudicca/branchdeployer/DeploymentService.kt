@@ -102,7 +102,7 @@ class DeploymentService(
 
             for (container in it.value) {
                 if (!activeBranches.contains(container.getBranch())) {
-                    logger.info { "cleaning up branch ${container.getBranch()} for git repo ${it.key}" }
+                    logger.info { "cleaning up container ${container.name} for branch ${container.getBranch()} for git repo ${it.key}" }
                     dockerService.delete(container.id)
                 }
             }

@@ -41,7 +41,7 @@ class RealDockerService : DockerService {
             DockerContainer(
                 it.id,
                 it.image,
-                it.names[0],
+                it.names[0].removePrefix("/"),
                 it.labels
             )
         }
