@@ -63,7 +63,7 @@ class DeploymentService(
             imageName
         )
 
-        val containerId = findContainerIdForBranchName(request.branchName)
+        val containerId = findContainerIdForBranchNameAndDeploymentType(request.branchName, request.deploymentName)
         if (containerId != null) {
             logger.info { "container for branch already exists, deleting old container" }
             dockerService.delete(containerId)
@@ -164,9 +164,9 @@ class DeploymentService(
             }
     }
 
-    private fun findContainerIdForBranchName(branchName: String): String? {
+    private fun findContainerIdForBranchNameAndDeploymentType(branchName: String, deploymentType: String): String? {
         return findAllManagedContainers()
-            .firstOrNull { it.getBranch() == branchName }
+            .firstOrNull { it.getBranch() == branchName && it.getDeploymentType() == deploymentType }
             ?.id
     }
 
