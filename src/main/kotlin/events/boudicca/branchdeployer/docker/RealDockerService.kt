@@ -40,8 +40,8 @@ class RealDockerService : DockerService {
         return containers.map {
             DockerContainer(
                 it.id,
-                it.names[0],
                 it.image,
+                it.names[0],
                 it.labels
             )
         }
